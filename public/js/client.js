@@ -76,7 +76,8 @@ function downsampleBuffer(buffer, inputSampleRate, outputSampleRate) {
 
   while (offsetResult < result.length) {
     const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
-    let accum = 0, count = 0;
+    let accum = 0,
+      count = 0;
 
     for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
       accum += buffer[i];
@@ -120,7 +121,8 @@ async function playNext() {
 startBtn.onclick = async () => {
   statusDiv.innerText = "Status: Connecting...";
 
-  socket = new WebSocket("ws://localhost:3000/ws");
+  const wsUrl = "wss://3.110.174.90.nip.io/ws";
+  socket = new WebSocket(wsUrl);
   socket.binaryType = "arraybuffer";
 
   socket.onopen = async () => {
@@ -134,7 +136,11 @@ startBtn.onclick = async () => {
       if (!socket || socket.readyState !== 1) return;
 
       const input = e.inputBuffer.getChannelData(0);
-      const downsampled = downsampleBuffer(input, audioContext.sampleRate, 16000);
+      const downsampled = downsampleBuffer(
+        input,
+        audioContext.sampleRate,
+        16000,
+      );
       const pcm16 = floatTo16BitPCM(downsampled);
       socket.send(pcm16);
     };
@@ -163,7 +169,9 @@ startBtn.onclick = async () => {
       }
 
       if (data.type === "USER_TRANSCRIPT") addMessage("user", data.text);
-      if (data.type === "AI_RESPONSE") { streamingBubble = null; }
+      if (data.type === "AI_RESPONSE") {
+        streamingBubble = null;
+      }
       if (data.type === "AI_STREAM") appendAIStream(data.text);
 
       return;
