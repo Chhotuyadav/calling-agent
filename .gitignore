@@ -1,0 +1,18 @@
+.env
+/.env
+node_modules
+
+query-all.txt
+uploads
+uploads/apk/*
+logs/*
+logs/requests.log
+images
+
+exports/*
+
+# subscription cache
+data/subscription/cache/*
+
+# OR specific file
+data/subscription/cache/driverSubscriptionCache.json
