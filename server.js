@@ -67,12 +67,19 @@ app.get("/token", (req, res) => {
   res.json({ token: token.toJwt(), identity });
 });
 
-// TwiML for browser outgoing call
+// TwiML for browser outgoing call — connect directly to AI stream
 app.post("/twilio/voice", (req, res) => {
-  const twiml = new twilio.twiml.VoiceResponse();
-  const dial = twiml.dial();
-  dial.number(process.env.TWILIO_PHONE_NUMBER);
-  res.type("text/xml").send(twiml.toString());
+  const host = req.headers.host;
+  const callerIdentity = req.body.Caller || "browser-user";
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Connect>
+    <Stream url="wss://${host}/twilio-stream">
+      <Parameter name="callerNumber" value="${callerIdentity}"/>
+    </Stream>
+  </Connect>
+</Response>`;
+  res.type("text/xml").send(twiml);
 });
 
 // Twilio incoming call webhook
