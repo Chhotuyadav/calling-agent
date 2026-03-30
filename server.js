@@ -5,12 +5,16 @@ const { Server } = require("socket.io");
 const { WebSocketServer } = require("ws");
 const { handleSocketConnection } = require("./src/ws/socketHandler");
 const { handleTwilioConnection } = require("./src/twilio/twilioHandler");
+const twilio = require("twilio");
+const { AccessToken } = twilio.jwt;
+const { VoiceGrant } = AccessToken;
 
 const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT || 8000;
 
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "Voice Agent Backend Running" });
@@ -38,6 +42,31 @@ server.on("upgrade", (req, socket, head) => {
     });
   }
   // Socket.IO handles its own upgrades automatically — do NOT call io.engine.handleUpgrade here
+});
+
+// Token for Twilio browser client
+app.get("/token", (req, res) => {
+  const identity = req.query.identity || "user";
+  const token = new AccessToken(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_API_KEY,
+    process.env.TWILIO_API_SECRET,
+    { identity }
+  );
+  const voiceGrant = new VoiceGrant({
+    outgoingApplicationSid: process.env.TWIML_APP_SID,
+    incomingAllow: true,
+  });
+  token.addGrant(voiceGrant);
+  res.json({ token: token.toJwt(), identity });
+});
+
+// TwiML for browser outgoing call
+app.post("/twilio/voice", (req, res) => {
+  const twiml = new twilio.twiml.VoiceResponse();
+  const dial = twiml.dial();
+  dial.number(process.env.TWILIO_PHONE_NUMBER);
+  res.type("text/xml").send(twiml.toString());
 });
 
 // Twilio incoming call webhook
