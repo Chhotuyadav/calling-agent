@@ -57,7 +57,7 @@ app.get("/token", (req, res) => {
     process.env.TWILIO_ACCOUNT_SID,
     process.env.TWILIO_API_KEY,
     process.env.TWILIO_API_SECRET,
-    { identity }
+    { identity },
   );
   const voiceGrant = new VoiceGrant({
     outgoingApplicationSid: process.env.TWIML_APP_SID,
@@ -70,12 +70,12 @@ app.get("/token", (req, res) => {
 // TwiML for browser outgoing call — connect directly to AI stream
 app.post("/twilio/voice", (req, res) => {
   const host = req.headers.host;
-  const callerIdentity = req.body.Caller || "browser-user";
+  const callerIdentity = "browser-user";
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
     <Stream url="wss://${host}/twilio-stream">
-      <Parameter name="callerNumber" value="${callerIdentity}"/>
+      <Parameter name="callerNumber" value="browser-user"/>
     </Stream>
   </Connect>
 </Response>`;
