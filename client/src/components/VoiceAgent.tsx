@@ -32,6 +32,7 @@ export default function VoiceAgent() {
 
       const device = new Device(token, { logLevel: "error" });
       deviceRef.current = device;
+      setMessages([]);
 
       await device.register();
       setStatus("Calling...");
