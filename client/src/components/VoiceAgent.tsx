@@ -97,7 +97,7 @@ export default function VoiceAgent() {
   };
 
   const startAgent = async () => {
-    setStatus("Connecting...");
+    setStatus("Connecting.......");
 
     const backendUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
@@ -110,7 +110,9 @@ export default function VoiceAgent() {
           audio: true,
         });
         const audioContext = new (
-          window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext })
+            .webkitAudioContext
         )();
         audioContextRef.current = audioContext;
 
