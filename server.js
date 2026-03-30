@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const http = require("http");
+const cors = require("cors");
 const { Server } = require("socket.io");
 const { WebSocketServer } = require("ws");
 const { handleSocketConnection } = require("./src/ws/socketHandler");
@@ -13,6 +14,11 @@ const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT || 8000;
 
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:3000")
+  .split(",")
+  .map((o) => o.trim());
+
+app.use(cors({ origin: allowedOrigins, methods: ["GET", "POST"] }));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -23,7 +29,7 @@ app.get("/", (req, res) => {
 // Socket.IO for browser clients
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
