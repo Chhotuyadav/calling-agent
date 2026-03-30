@@ -1,21 +1,46 @@
 require("dotenv").config();
 const express = require("express");
-const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
 const { WebSocketServer } = require("ws");
 const { handleSocketConnection } = require("./src/ws/socketHandler");
 const { handleTwilioConnection } = require("./src/twilio/twilioHandler");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const server = http.createServer(app);
+const port = process.env.PORT || 8000;
 
-app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: false }));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.json({ status: "ok", message: "Voice Agent Backend Running" });
 });
 
-// Twilio webhook - when a call comes in
+// Socket.IO for browser clients
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
+});
+
+io.on("connection", (socket) => {
+  handleSocketConnection(socket);
+});
+
+// Raw WebSocket for Twilio only
+const twilioWss = new WebSocketServer({ noServer: true });
+
+server.on("upgrade", (req, socket, head) => {
+  if (req.url === "/twilio-stream") {
+    twilioWss.handleUpgrade(req, socket, head, (ws) => {
+      handleTwilioConnection(ws);
+    });
+  }
+  // Socket.IO handles its own upgrades automatically — do NOT call io.engine.handleUpgrade here
+});
+
+// Twilio incoming call webhook
 app.post("/incoming-call", (req, res) => {
   const callerNumber = req.body.From || "unknown";
   console.log(`📞 Incoming call from: ${callerNumber}`);
@@ -33,18 +58,6 @@ app.post("/incoming-call", (req, res) => {
   res.type("text/xml").send(twiml);
 });
 
-const server = app.listen(port, () => {
-  console.log(`🚀 Server running: http://localhost:${port}`);
-});
-
-const wss = new WebSocketServer({ server, path: "/ws" });
-const twilioWss = new WebSocketServer({ server, path: "/twilio-stream" });
-
-wss.on("connection", (ws) => {
-  console.log("🔌 Browser client connected");
-  handleSocketConnection(ws);
-});
-
-twilioWss.on("connection", (ws) => {
-  handleTwilioConnection(ws);
+server.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
 });

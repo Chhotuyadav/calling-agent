@@ -1,6 +1,23 @@
 const { createDeepgramSTT } = require("../deepgram/stt");
 const { getTTS } = require("../tts/router");
 const { askOpenAIStream } = require("../llm/openai");
+const { deepgram } = require("../deepgram/client");
+
+async function getTTSForTwilio(text) {
+  const ttsResponse = await deepgram.speak.request(
+    { text },
+    { model: "aura-asteria-en", encoding: "mulaw", sample_rate: 8000, container: "none" }
+  );
+  const stream = await ttsResponse.getStream();
+  const reader = stream.getReader();
+  const chunks = [];
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks);
+}
 
 function handleTwilioConnection(ws) {
   console.log("📞 Twilio call connected");
@@ -26,7 +43,7 @@ function handleTwilioConnection(ws) {
           const textToSpeak = sentenceBuffer.trim();
           if (textToSpeak) {
             console.log("🔊 Speaking:", textToSpeak);
-            getTTS(textToSpeak)
+            getTTSForTwilio(textToSpeak)
               .then((audioBuffer) => sendAudioToTwilio(ws, streamSid, audioBuffer))
               .catch((err) => console.error("TTS Error:", err));
           }
@@ -35,7 +52,7 @@ function handleTwilioConnection(ws) {
       });
 
       if (sentenceBuffer.trim()) {
-        const audioBuffer = await getTTS(sentenceBuffer.trim());
+        const audioBuffer = await getTTSForTwilio(sentenceBuffer.trim());
         sendAudioToTwilio(ws, streamSid, audioBuffer);
       }
     } catch (err) {
