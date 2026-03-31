@@ -60,6 +60,15 @@ function handleTwilioConnection(ws) {
     }
   };
 
+  let audioQueue = [];
+  let dgReady = false;
+
+  dgLive.on("open", () => {
+    dgReady = true;
+    audioQueue.forEach((chunk) => dgLive.send(chunk));
+    audioQueue = [];
+  });
+
   dgLive.on("Results", onTranscript);
   dgLive.on("TranscriptResult", onTranscript);
 
@@ -74,8 +83,10 @@ function handleTwilioConnection(ws) {
 
     if (msg.event === "media") {
       const audioChunk = Buffer.from(msg.media.payload, "base64");
-      if (dgLive.getReadyState() === 1) {
+      if (dgReady) {
         dgLive.send(audioChunk);
+      } else {
+        audioQueue.push(audioChunk);
       }
     }
 

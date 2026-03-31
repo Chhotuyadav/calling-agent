@@ -7,8 +7,8 @@ function createDeepgramSTT() {
     smart_format: true,
     interim_results: true,
     endpointing: 500,
-    encoding: "linear16",
-    sample_rate: 16000,
+    encoding: "mulaw",
+    sample_rate: 8000,
     channels: 1,
   });
 
